@@ -1,0 +1,50 @@
+version: '3.9'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - APP_ENV=${APP_ENV}
+
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  guacamole:
+    image: oznu/guacamole
+    restart: always
+    ports:
+      - "8081:8080"
+    environment:
+      GUAC_USER: ${GUAC_USER}
+      GUAC_PASS: ${GUAC_PASS}
+
+  vnc:
+    image: dorowu/ubuntu-desktop-lxde-vnc
+    ports:
+      - "6080:80"
+      - "5901:5901"
+    environment:
+      VNC_PASSWORD: ${VNC_PASSWORD}
+      VNC_RESOLUTION: 1920x1080
+      VNC_COL_DEPTH: 24
+      VNC_VIEW_ONLY: false
+      VNC_NO_PASSWORD: false
+
+volumes:
+  pgdata:

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Claude AI Agent</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #chat { border: 1px solid #ccc; padding: 10px; max-width: 600px; height: 300px; overflow-y: auto; }
+    #promptInput { width: 400px; }
+    .msg { margin: 5px 0; }
+    .agent { color: green; }
+    .user { color: blue; }
+  </style>
+</head>
+<body>
+  <h2>Claude AI Agent</h2>
+
+  <button onclick="startSession()">Start Session</button>
+  <p id="sessionInfo"></p>
+
+  <div id="chat"></div>
+
+  <input type="text" id="promptInput" placeholder="Enter your prompt" />
+  <button onclick="sendPrompt()">Send</button>
+
+  <script>
+    let sessionId = null;
+    let ws = null;
+
+    async function startSession() {
+      const res = await fetch('/start-session', { method: 'POST' });
+      const data = await res.json();
+      sessionId = data.session_id;
+      document.getElementById('sessionInfo').innerText = `Session ID: ${sessionId}`;
+      openWebSocket();
+    }
+
+    function openWebSocket() {
+      ws = new WebSocket(`ws://${location.host}/ws/${sessionId}`);
+      ws.onmessage = function (event) {
+        addMessage(event.data, 'agent');
+      };
+      ws.onclose = function () {
+        addMessage('[Disconnected from server]', 'system');
+      };
+    }
+
+    async function sendPrompt() {
+      const prompt = document.getElementById('promptInput').value;
+      if (!prompt || !sessionId) return;
+
+      addMessage(prompt, 'user');
+      await fetch('/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, session_id: sessionId })
+      });
+      document.getElementById('promptInput').value = '';
+    }
+
+    function addMessage(text, role) {
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.innerText = `[${role}] ${text}`;
+      document.getElementById('chat').appendChild(div);
+      document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+    }
+  </script>
+</body>
+</html>
